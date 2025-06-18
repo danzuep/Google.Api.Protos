@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Title>Google API Protos</Title>
+    <Description>Common Protocol Buffer messages for Google APIs</Description>
+    <TargetFrameworks>netstandard2.0;net8.0</TargetFrameworks>
+    <PackageId>Google.Api.Protos</PackageId>
+    <PackageOutputPath>$(SolutionDir)../publish</PackageOutputPath>
+    <!--<GeneratePackageOnBuild>true</GeneratePackageOnBuild>-->
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!--<PackageReference Include="Google.Api.CommonProtos" Version="2.17.0" />-->
+    <PackageReference Include="Google.Protobuf" Version="3.31.1" />
+    <PackageReference Include="Grpc.Tools" Version="2.72.0">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Protobuf Include="../protos/google/**/*.proto" ProtoRoot="../protos" />
+    <None Include="../protos/google/**/*.proto" LinkBase="protos" Pack="true" PackagePath="content/protos" />
+  </ItemGroup>
+</Project>
