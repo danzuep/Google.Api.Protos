@@ -1,7 +1,6 @@
-# .\publish-to-nuget.ps1 -Package "Google.Api.Protos"
+# ./publish-to-nuget.ps1 -Package "Google.Api.Protos"
 
 param (
-    # [Parameter(Mandatory = $true)]
     [string] $Package = "Google.Api.Protos",
     [string] $PublishPath = "../publish",
     [string] $GitVersionPropertiesPath = "${PublishPath}/gitversion.properties",
@@ -10,17 +9,15 @@ param (
     [string] $NugetApiKey = $env:NEXUS_KEY
 )
 
-function CheckForDotNetGlobalTool {
-    param([string]$PackageId = "GitVersion.Tool")
-    # Check if the global tool is already installed
+# Check if dotnet-outdated-tool is installed and install it if not
+function CheckForDotNetGlobalTool([string]$PackageId) {
     if (-not (dotnet tool list --global $PackageId | Select-String -Pattern $PackageId)) {
         Write-Host "Installing global tool: ${PackageId}"
         dotnet tool install --global $PackageId
     }
 }
 
-function Get-GitVersionNuGetVersion {
-    param([string] $PropertiesPath = "gitversion.env")
+function Get-GitVersionNuGetVersion([string]$PropertiesPath) {
     CheckForDotNetGlobalTool -PackageId "GitVersion.Tool"
     dotnet-gitversion /output dotenv /showvariable SemVer > $PropertiesPath
     if ($LASTEXITCODE -ne 0) {
@@ -73,22 +70,27 @@ function Push-Package {
 }
 
 # Main script execution
-
 $ErrorActionPreference = "Stop"
 
 try {
     if (-not (Test-Path "$PSScriptRoot/../protos")) {
-        . $PSScriptRoot/update-google-protos.ps1
+        . "$PSScriptRoot/update-google-protos.ps1"
     }
-    Set-Location "$PSScriptRoot/../src"
+    $source = "$PSScriptRoot/../src"
+    Set-Location $source
     Write-Output "Package name is $Package"
     $version = Get-GitVersionNuGetVersion -PropertiesPath $GitVersionPropertiesPath
     Pack-Package -PackageName $Package -Version $version -Configuration $TargetConfiguration
     Write-Output "Publishing $Package version $version"
     Push-Package -PackageName $Package -Version $version -PublishPath $PublishPath -Repository $NugetRepository -ApiKey $NugetApiKey
-    Write-Output "Publish completed successfully."
+    Write-Output "Updating package versions"
+    . "$PSScriptRoot/update-package-versions.ps1" -Path $source
+    Write-Output "Publish and update completed successfully."
 }
 catch {
     Write-Error $_.Exception.Message
     exit 1
+}
+finally {
+    Set-Location -Path "$PSScriptRoot/.."
 }
